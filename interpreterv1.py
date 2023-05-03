@@ -1,4 +1,3 @@
-import intbase
 from intbase import InterpreterBase
 from intbase import ErrorType
 from bparser import BParser
@@ -142,7 +141,6 @@ class Expression:
         if len(self.expression) == 1:
             if self.expression.isdigit():
                 result = int(self.expression)
-                print(result)
             elif self.expression == 'True':
                 result = True
             elif self.expression == 'False':
@@ -184,13 +182,12 @@ class Expression:
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 elif op in {'&', '|'} and (type(arg1) == int or type(arg2) == int):
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
-                print(arg1, arg2)
                 result = op_func(arg1, arg2)
-            elif op == '!':
-                arg = Expression(
-                    self.expression[1], self.interpreter).evaluate_expression(parameters)
-                return not arg
-            return result
+        elif op == '!':
+            arg = Expression(
+                self.expression[1], self.interpreter).evaluate_expression(parameters)
+            return not arg
+        return result
     '''
             elif op == 'if':
                 condition = Expression(
@@ -199,7 +196,7 @@ class Expression:
                     return Expression(self.expr_list[2]).evaluate_expression(parameters)
                 else:
                     return Expression(self.expr_list[3]).evaluate_expression(parameters)
-    '''
+    
 
 
 print_src = ['(class main',
@@ -210,3 +207,4 @@ print_src = ['(class main',
 
 test = Interpreter()
 test.run(print_src)
+'''
