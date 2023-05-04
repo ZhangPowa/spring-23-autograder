@@ -85,7 +85,7 @@ class ObjectDefinition:
     def call_method(self, method_name, parameters):
         method = self.methods[method_name]
         statement = method.get_top_level_statement()
-        result = self.__run_statement(statement, self.fields)
+        result = self.__run_statement(statement, parameters)
         return result
 
     def __run_statement(self, statement, parameters):
@@ -107,7 +107,7 @@ class ObjectDefinition:
         return result
 
     def __execute_print_statement(self, statement, parameters=None):
-        expression = Expression(statement[1], self.interpreter)
+        expression = Expression(statement[1], self.fields, self.interpreter)
         value = expression.evaluate_expression(parameters)
         print(value)
         return value
@@ -122,7 +122,7 @@ class ObjectDefinition:
         return
 
     def __execute_if_statement(self, statement, parameters=None):
-        expression = Expression(statement[1], self.interpreter)
+        expression = Expression(statement[1], self.fields, self.interpreter)
         condition = expression.evaluate_expression(parameters)
         if type(condition) != bool: 
             self.interpreter.error(ErrorType.TYPE_ERROR)
@@ -141,8 +141,9 @@ class ObjectDefinition:
 
 
 class Expression:
-    def __init__(self, expression, interpreter):
+    def __init__(self, expression, fields, interpreter):
         self.expression = expression
+        self.fields = fields
         self.interpreter = interpreter
 
     def evaluate_expression(self, parameters=None):
@@ -166,9 +167,9 @@ class Expression:
                     '|': lambda x, y: x or y,
                 }[op]
                 arg1 = Expression(
-                    self.expression[1], self.interpreter).evaluate_expression(parameters)
+                    self.expression[1], self.fields, self.interpreter).evaluate_expression(parameters)
                 arg2 = Expression(
-                    self.expression[2], self.interpreter).evaluate_expression(parameters)
+                    self.expression[2], self.fields, self.interpreter).evaluate_expression(parameters)
                 if type(arg1) != type(arg2):
                     self.interpreter.error(ErrorType.TYPE_ERROR)
                 if op in {'+', '-', '*', '/', '%', '<', '>', '<=', '>='} and (type(arg1) == bool or type(arg2) == bool):
@@ -179,7 +180,7 @@ class Expression:
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 result = op_func(arg1, arg2)
             elif op == '!':
-                arg = Expression(self.expression[1], self.interpreter).evaluate_expression(parameters)
+                arg = Expression(self.expression[1], self.fields, self.interpreter).evaluate_expression(parameters)
                 return not arg
         else:
             if self.expression.isdigit():
@@ -189,8 +190,8 @@ class Expression:
             elif self.expression == 'False':
                 result = False
             elif isinstance(self.expression, str):
-                if self.expression in parameters:
-                    result = parameters[self.expression]
+                if self.expression in self.fields:
+                    result = self.fields[self.expression]
                 elif self.expression == 'null':
                     result = None
                 else:
@@ -220,7 +221,7 @@ print_src = ['(class main',
              '(field num 0)',
              '(field result 1)'
              ' (method main ()',
-             '(print num)',
+             '(print result)',
              ' ) # end of method',
              ') # end of class']
 
