@@ -17,7 +17,7 @@ class Interpreter(InterpreterBase):
             class_fields = []
             for item in class_def[2:]:
                 if item[0] == 'field':
-                    field_name, initial_value = [item[1:]]
+                    field_name, initial_value = item[1:]
                     class_fields.append(FieldDefinition(
                         field_name, initial_value))
                 elif item[0] == 'method':
@@ -66,7 +66,7 @@ class ClassDefinition:
         for method in self.methods:
             obj.add_method(method)
         for field in self.fields:
-            obj.add_field(field)
+            obj.add_field(field.field_name, field.initial_value)
         return obj
 
 
@@ -85,7 +85,7 @@ class ObjectDefinition:
     def call_method(self, method_name, parameters):
         method = self.methods[method_name]
         statement = method.get_top_level_statement()
-        result = self.__run_statement(statement, parameters)
+        result = self.__run_statement(statement, self.fields)
         return result
 
     def __run_statement(self, statement, parameters):
@@ -93,17 +93,17 @@ class ObjectDefinition:
         if statement[0] == InterpreterBase.PRINT_DEF:
             result = self.__execute_print_statement(statement, parameters)
         elif statement[0] == InterpreterBase.INPUT_INT_DEF or statement[0] == InterpreterBase.INPUT_STRING_DEF:
-            result = self.__execute_input_statement(statement)
+            result = self.__execute_input_statement(statement, parameters)
         elif statement[0] == InterpreterBase.CALL_DEF:
-            result = self.__execute_call_statement(statement)
+            result = self.__execute_call_statement(statement, parameters)
         elif statement[0] == InterpreterBase.WHILE_DEF:
-            result = self.__execute_while_statement(statement)
+            result = self.__execute_while_statement(statement, parameters)
         elif statement[0] == InterpreterBase.IF_DEF:
-            result = self.__execute_if_statement(statement)
+            result = self.__execute_if_statement(statement, parameters)
         elif statement[0] == InterpreterBase.RETURN_DEF:
-            result = self.__execute_return_statement(statement)
+            result = self.__execute_return_statement(statement, parameters)
         elif statement[0] == InterpreterBase.BEGIN_DEF:
-            result = self.__execute_begin_statement(statement)
+            result = self.__execute_begin_statement(statement, parameters)
         return result
 
     def __execute_print_statement(self, statement, parameters=None):
@@ -122,6 +122,15 @@ class ObjectDefinition:
         return
 
     def __execute_if_statement(self, statement, parameters=None):
+        expression = Expression(statement[1], self.interpreter)
+        condition = expression.evaluate_expression(parameters)
+        if type(condition) != bool: 
+            self.interpreter.error(ErrorType.TYPE_ERROR)
+        if condition:
+            self.__run_statement(statement[2], parameters)
+        else:
+            if len(statement) > 3:
+                self.__run_statement(statement[3], parameters)          
         return
 
     def __execute_return_statement(self, statement, parameters=None):
@@ -138,21 +147,7 @@ class Expression:
 
     def evaluate_expression(self, parameters=None):
         result = None
-        if len(self.expression) == 1:
-            if self.expression.isdigit():
-                result = int(self.expression)
-            elif self.expression == 'True':
-                result = True
-            elif self.expression == 'False':
-                result = False
-            elif isinstance(self.expression, str):
-                if self.expression in parameters:
-                    result = parameters[self.expression]
-                elif self.expression == 'null':
-                    result = None
-                else:
-                    result = str(self.expression)
-        elif isinstance(self.expression, list):
+        if isinstance(self.expression, list):
             op = self.expression[0]
             if op in {'+', '-', '*', '/', '%', '<', '>', '<=', '>=', '==', '!=', '&', '|'}:
                 op_func = {
@@ -183,10 +178,23 @@ class Expression:
                 elif op in {'&', '|'} and (type(arg1) == int or type(arg2) == int):
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 result = op_func(arg1, arg2)
-        elif op == '!':
-            arg = Expression(
-                self.expression[1], self.interpreter).evaluate_expression(parameters)
-            return not arg
+            elif op == '!':
+                arg = Expression(self.expression[1], self.interpreter).evaluate_expression(parameters)
+                return not arg
+        else:
+            if self.expression.isdigit():
+                result = int(self.expression)
+            elif self.expression == 'True':
+                result = True
+            elif self.expression == 'False':
+                result = False
+            elif isinstance(self.expression, str):
+                if self.expression in parameters:
+                    result = parameters[self.expression]
+                elif self.expression == 'null':
+                    result = None
+                else:
+                    result = str(self.expression)
         return result
     '''
             elif op == 'if':
@@ -208,3 +216,13 @@ print_src = ['(class main',
 test = Interpreter()
 test.run(print_src)
 '''
+print_src = ['(class main',
+             '(field num 0)',
+             '(field result 1)'
+             ' (method main ()',
+             '(print num)',
+             ' ) # end of method',
+             ') # end of class']
+
+test = Interpreter()
+test.run(print_src)
