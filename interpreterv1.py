@@ -113,6 +113,8 @@ class ObjectDefinition:
         return value
 
     def __execute_input_statement(self, statement, parameters=None):
+        if statement[1] in self.fields:
+            self.fields[statement[1]] = input()
         return
 
     def __execute_call_statement(self, statement, parameters=None):
@@ -137,6 +139,8 @@ class ObjectDefinition:
         return
 
     def __execute_begin_statement(self, statement, parameters=None):
+        for i in statement:
+            self.__run_statement(i, parameters)
         return
 
 
@@ -218,12 +222,17 @@ test = Interpreter()
 test.run(print_src)
 '''
 print_src = ['(class main',
-             '(field num 0)',
-             '(field result 1)'
+             '(field x 0)',
+             '(field y "test")'
              ' (method main ()',
-             '(print result)',
-             ' ) # end of method',
-             ') # end of class']
+             '(begin ',
+             '(inputi x)',
+             ' (print x)',
+             '(inputi y)',
+             ' (print y)',
+             ')',
+             ')'
+             ')']
 
 test = Interpreter()
 test.run(print_src)
