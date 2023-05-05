@@ -118,6 +118,14 @@ class ObjectDefinition:
     def __execute_print_statement(self, statement, parameters=None):
         expression = Expression(statement[1], self.fields, self.interpreter)
         value = expression.evaluate_expression(parameters)
+        if value is True:
+            value = 'true'
+        elif value is False:
+            value = 'false'
+        elif isinstance(value, str):
+            value = value[1:len(value)-1]
+        elif isinstance(value, int):
+            value = str(value)
         self.interpreter.output(value)
         return value
 
@@ -250,15 +258,18 @@ print_src = ['(class main',
 
 
 
+
+
+
 print_src = ['(class main',
              '(field x 5)',
              '(field y "test")',
              '(method main ()',
              '(begin',
-             '(inputi x)',
+             '(set x "def")',
              '(print x)',
-             '(inputi y)',
-             '(print y)',
+             '(set x true)',
+             '(print x)',
              ')',
              ')',
              ')']
