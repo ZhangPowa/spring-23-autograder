@@ -1,0 +1,4 @@
+(class main
+  (field num 5)
+  (method main ()
+   (if (== num 5) (if (> num 3) (print "big boi")))))

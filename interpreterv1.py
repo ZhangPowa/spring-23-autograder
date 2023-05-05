@@ -77,7 +77,14 @@ class ObjectDefinition:
         self.interpreter = interpreter
 
     def add_field(self, field_name, initial_value):
-        self.fields[field_name] = initial_value
+        if initial_value.isdigit():
+            self.fields[field_name] = int(initial_value)
+        elif initial_value == 'true':
+            self.fields[field_name] = True
+        elif initial_value == 'false':
+            self.fields[field_name] = False
+        else:
+            self.fields[field_name] = initial_value
 
     def add_method(self, method):
         self.methods[method.method_name] = method
@@ -104,6 +111,8 @@ class ObjectDefinition:
             result = self.__execute_return_statement(statement, parameters)
         elif statement[0] == InterpreterBase.BEGIN_DEF:
             result = self.__execute_begin_statement(statement, parameters)
+        elif statement[0] == InterpreterBase.SET_DEF:
+            result = self.__execute_set_statement(statement, parameters)
         return result
 
     def __execute_print_statement(self, statement, parameters=None):
@@ -126,13 +135,13 @@ class ObjectDefinition:
     def __execute_if_statement(self, statement, parameters=None):
         expression = Expression(statement[1], self.fields, self.interpreter)
         condition = expression.evaluate_expression(parameters)
-        if type(condition) != bool: 
+        if type(condition) != bool:
             self.interpreter.error(ErrorType.TYPE_ERROR)
         if condition:
             self.__run_statement(statement[2], parameters)
         else:
             if len(statement) > 3:
-                self.__run_statement(statement[3], parameters)          
+                self.__run_statement(statement[3], parameters)
         return
 
     def __execute_return_statement(self, statement, parameters=None):
@@ -142,6 +151,8 @@ class ObjectDefinition:
         for i in statement:
             self.__run_statement(i, parameters)
         return
+
+    def __execute_set_statement(self, statement, parameters):
 
 
 class Expression:
@@ -184,14 +195,15 @@ class Expression:
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 result = op_func(arg1, arg2)
             elif op == '!':
-                arg = Expression(self.expression[1], self.fields, self.interpreter).evaluate_expression(parameters)
+                arg = Expression(
+                    self.expression[1], self.fields, self.interpreter).evaluate_expression(parameters)
                 return not arg
         else:
             if self.expression.isdigit():
                 result = int(self.expression)
-            elif self.expression == 'True':
+            elif self.expression == 'true':
                 result = True
-            elif self.expression == 'False':
+            elif self.expression == 'false':
                 result = False
             elif isinstance(self.expression, str):
                 if self.expression in self.fields:
@@ -220,7 +232,7 @@ print_src = ['(class main',
 
 test = Interpreter()
 test.run(print_src)
-'''
+
 print_src = ['(class main',
              '(field x 0)',
              '(field y "test")'
@@ -234,5 +246,18 @@ print_src = ['(class main',
              ')'
              ')']
 
+
+
+print_src = ['(class main',
+             '(field num 5)',
+             '(method main ()',
+             '(if (== num 5)',
+             '(if (> num 3)'
+             '(print "big boi")',
+             ')',
+             ')',
+             ')'
+             ')']
 test = Interpreter()
 test.run(print_src)
+'''
