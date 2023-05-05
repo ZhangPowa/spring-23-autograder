@@ -23,9 +23,9 @@ class Interpreter(InterpreterBase):
                 elif item[0] == 'method':
                     method_name = item[1]
                     params = item[2]
-                    statements = item[3]
+                    statement = item[3]
                     class_methods.append(MethodDefinition(
-                        method_name, params, statements))
+                        method_name, params, statement))
         new_class_def = ClassDefinition(
             class_name, class_methods, class_fields, self)
         obj_def = new_class_def.instantiate_object()
@@ -39,13 +39,13 @@ class FieldDefinition:
 
 
 class MethodDefinition:
-    def __init__(self, method_name, params, statements):
+    def __init__(self, method_name, params, statement):
         self.method_name = method_name
         self.params = params
-        self.statements = statements
+        self.statement = statement
 
     def get_top_level_statement(self):
-        return self.statements
+        return self.statement
 
 
 class ClassDefinition:
@@ -118,12 +118,12 @@ class ObjectDefinition:
     def __execute_print_statement(self, statement, parameters=None):
         expression = Expression(statement[1], self.fields, self.interpreter)
         value = expression.evaluate_expression(parameters)
-        print(value)
+        self.interpreter.output(value)
         return value
 
     def __execute_input_statement(self, statement, parameters=None):
         if statement[1] in self.fields:
-            self.fields[statement[1]] = input()
+            self.fields[statement[1]] = self.interpreter.get_input()
         return
 
     def __execute_call_statement(self, statement, parameters=None):
@@ -148,11 +148,13 @@ class ObjectDefinition:
         return
 
     def __execute_begin_statement(self, statement, parameters=None):
-        for i in statement:
+        for i in statement[1:]:
             self.__run_statement(i, parameters)
         return
 
     def __execute_set_statement(self, statement, parameters):
+        self.add_field(statement[1], statement[2])
+        return
 
 
 class Expression:
@@ -211,7 +213,7 @@ class Expression:
                 elif self.expression == 'null':
                     result = None
                 else:
-                    result = str(self.expression)
+                    result = self.expression
         return result
     '''
             elif op == 'if':
@@ -249,14 +251,16 @@ print_src = ['(class main',
 
 
 print_src = ['(class main',
-             '(field num 5)',
+             '(field x 5)',
+             '(field y "test")',
              '(method main ()',
-             '(if (== num 5)',
-             '(if (> num 3)'
-             '(print "big boi")',
+             '(begin',
+             '(inputi x)',
+             '(print x)',
+             '(inputi y)',
+             '(print y)',
              ')',
              ')',
-             ')'
              ')']
 test = Interpreter()
 test.run(print_src)
