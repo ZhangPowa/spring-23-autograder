@@ -84,7 +84,10 @@ class ObjectDefinition:
         self.interpreter = interpreter
 
     def add_field(self, field_name, initial_value):
-        self.fields[field_name] = initial_value
+        expression = Expression(
+            initial_value, self.fields, self.parameters, self.interpreter)
+        value = expression.evaluate_expression()
+        self.fields[field_name] = value
         """
         if initial_value.isdigit() or initial_value[1:].isdigit():
             self.fields[field_name] = int(initial_value)
@@ -107,36 +110,35 @@ class ObjectDefinition:
         else:
             for i in range(0, len(method.params)):
                 self.parameters[method.params[i]] = parameters[i]
-        print(self.parameters)
-        result = self.__run_statement(statement, parameters)
+        result = self.__run_statement(statement)
         return result
 
-    def __run_statement(self, statement, parameters):
+    def __run_statement(self, statement):
         result = None
         if statement[0] == InterpreterBase.PRINT_DEF:
-            result = self.__execute_print_statement(statement, parameters)
+            result = self.__execute_print_statement(statement)
         elif statement[0] == InterpreterBase.INPUT_INT_DEF or statement[0] == InterpreterBase.INPUT_STRING_DEF:
-            result = self.__execute_input_statement(statement, parameters)
+            result = self.__execute_input_statement(statement)
         elif statement[0] == InterpreterBase.CALL_DEF:
-            result = self.__execute_call_statement(statement, parameters)
+            result = self.__execute_call_statement(statement)
         elif statement[0] == InterpreterBase.WHILE_DEF:
-            result = self.__execute_while_statement(statement, parameters)
+            result = self.__execute_while_statement(statement)
         elif statement[0] == InterpreterBase.IF_DEF:
-            result = self.__execute_if_statement(statement, parameters)
+            result = self.__execute_if_statement(statement)
         elif statement[0] == InterpreterBase.RETURN_DEF:
-            result = self.__execute_return_statement(statement, parameters)
+            result = self.__execute_return_statement(statement)
         elif statement[0] == InterpreterBase.BEGIN_DEF:
-            result = self.__execute_begin_statement(statement, parameters)
+            result = self.__execute_begin_statement(statement)
         elif statement[0] == InterpreterBase.SET_DEF:
-            result = self.__execute_set_statement(statement, parameters)
+            result = self.__execute_set_statement(statement)
         return result
 
-    def __execute_print_statement(self, statement, parameters=None):
+    def __execute_print_statement(self, statement):
         output = ''
         for i in statement[1:]:
             expression = Expression(
-                i, self.fields, self.interpreter)
-            value = expression.evaluate_expression(parameters)
+                i, self.fields, self.parameters, self.interpreter)
+            value = expression.evaluate_expression()
             if value is True:
                 value = 'true'
             elif value is False:
@@ -149,69 +151,77 @@ class ObjectDefinition:
         self.interpreter.output(output)
         return value
 
-    def __execute_input_statement(self, statement, parameters=None):
+    def __execute_input_statement(self, statement):
         expression = Expression(
-            self.interpreter.get_input(), self.fields, self.interpreter)
-        value = expression.evaluate_expression(parameters)
+            self.interpreter.get_input(), self.fields, self.parameters, self.interpreter)
+        value = expression.evaluate_expression()
         if statement[1] in self.fields:
-            self.add_field(statement[1], value)
+            self.fields[statement[1]] = value
         return
 
-    def __execute_call_statement(self, statement, parameters=None):
+    def __execute_call_statement(self, statement):
+        values = []
+        for i in statement[3:]:
+            param = Expression(
+                i, self.fields, self.parameters, self.interpreter)
+            values.append(param.evaluate_expression())
         if statement[1] == 'me':
             if statement[2] in self.methods:
-                self.call_method(statement[2], parameters=statement[3:])
+                self.call_method(statement[2], parameters=values)
             else:
                 self.interpreter.error(NameError)
         else:
             expression = Expression(
-                statement[1], self.fields, self.interpreter)
-            class_name = expression.evaluate_expression(parameters)
-            class_name.call_method(statement[2], parameters=statement[3:])
+                statement[1], self.fields, self.parameters, self.interpreter)
+            class_name = expression.evaluate_expression()
+            class_name.call_method(statement[2], parameters=values)
             return
 
         return
 
-    def __execute_while_statement(self, statement, parameters=None):
+    def __execute_while_statement(self, statement):
         return
 
-    def __execute_if_statement(self, statement, parameters=None):
-        expression = Expression(statement[1], self.fields, self.interpreter)
-        condition = expression.evaluate_expression(parameters)
+    def __execute_if_statement(self, statement):
+        expression = Expression(
+            statement[1], self.fields, self.parameters, self.interpreter)
+        condition = expression.evaluate_expression()
         if type(condition) != bool:
             self.interpreter.error(ErrorType.TYPE_ERROR)
         if condition:
-            self.__run_statement(statement[2], parameters)
+            self.__run_statement(statement[2])
         else:
             if len(statement) > 3:
-                self.__run_statement(statement[3], parameters)
+                self.__run_statement(statement[3])
         return
 
-    def __execute_return_statement(self, statement, parameters=None):
+    def __execute_return_statement(self, statement):
         return
 
-    def __execute_begin_statement(self, statement, parameters=None):
+    def __execute_begin_statement(self, statement):
         for i in statement[1:]:
-            self.__run_statement(i, parameters)
+            self.__run_statement(i)
         return
 
-    def __execute_set_statement(self, statement, parameters):
-        expression = Expression(statement[2], self.fields, self.interpreter)
-        value = expression.evaluate_expression(parameters)
+    def __execute_set_statement(self, statement):
+        expression = Expression(
+            statement[2], self.fields, self.parameters, self.interpreter)
+        value = expression.evaluate_expression()
         if statement[1] in self.fields:
-            self.add_field(statement[1], value)
+            self.fields[statement[1]] = value
         else:
             self.interpreter.error(NameError)
         return
 
 
 class Expression:
-    def __init__(self, expression, fields, interpreter):
+    def __init__(self, expression, fields, parameters, interpreter):
         self.expression = expression
         self.fields = fields
+        self.parameters = parameters
         self.interpreter = interpreter
 
-    def evaluate_expression(self, parameters=None):
+    def evaluate_expression(self):
         result = None
         if isinstance(self.expression, list):
             op = self.expression[0]
@@ -232,9 +242,9 @@ class Expression:
                     '|': lambda x, y: x or y,
                 }[op]
                 arg1 = Expression(
-                    self.expression[1], self.fields, self.interpreter).evaluate_expression(parameters)
+                    self.expression[1], self.fields, self.parameters, self.interpreter).evaluate_expression()
                 arg2 = Expression(
-                    self.expression[2], self.fields, self.interpreter).evaluate_expression(parameters)
+                    self.expression[2], self.fields, self.parameters, self.interpreter).evaluate_expression()
                 if type(arg1) != type(arg2):
                     self.interpreter.error(ErrorType.TYPE_ERROR)
                 if op in {'+', '-', '*', '/', '%', '<', '>', '<=', '>='} and (type(arg1) == bool or type(arg2) == bool):
@@ -246,7 +256,7 @@ class Expression:
                 result = op_func(arg1, arg2)
             elif op == '!':
                 arg = Expression(
-                    self.expression[1], self.fields, self.interpreter).evaluate_expression(parameters)
+                    self.expression[1], self.fields, self.parameters, self.interpreter).evaluate_expression()
                 return not arg
             elif op == 'new':
                 class_defs = self.interpreter.get_class_def()
@@ -264,6 +274,8 @@ class Expression:
             elif isinstance(self.expression, str):
                 if self.expression in self.fields:
                     result = self.fields[self.expression]
+                elif self.expression in self.parameters:
+                    result = self.parameters[self.expression]
                 elif self.expression == 'null':
                     result = None
                 else:
@@ -321,7 +333,7 @@ print_src = ['(class main',
              '(print "here\'s a result " (* 3 5) " and here\'s a boolean" true)',
              ')'
              ')']
-'''
+
 
 
 print_src = ['(class main',
@@ -337,3 +349,4 @@ print_src = ['(class main',
              ')']
 test = Interpreter()
 test.run(print_src)
+'''
