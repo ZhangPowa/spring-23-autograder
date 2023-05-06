@@ -77,14 +77,14 @@ class ObjectDefinition:
         self.interpreter = interpreter
 
     def add_field(self, field_name, initial_value):
-        if initial_value.isdigit():
+        if initial_value.isdigit() or initial_value[1:].isdigit():
             self.fields[field_name] = int(initial_value)
         elif initial_value == 'true':
             self.fields[field_name] = True
         elif initial_value == 'false':
             self.fields[field_name] = False
         else:
-            self.fields[field_name] = initial_value
+            self.fields[field_name] = str(initial_value)
 
     def add_method(self, method):
         self.methods[method.method_name] = method
@@ -116,22 +116,26 @@ class ObjectDefinition:
         return result
 
     def __execute_print_statement(self, statement, parameters=None):
-        expression = Expression(statement[1], self.fields, self.interpreter)
-        value = expression.evaluate_expression(parameters)
-        if value is True:
-            value = 'true'
-        elif value is False:
-            value = 'false'
-        elif isinstance(value, str):
-            value = value[1:len(value)-1]
-        elif isinstance(value, int):
-            value = str(value)
-        self.interpreter.output(value)
+        output = ''
+        for i in statement[1:]:
+            expression = Expression(
+                i, self.fields, self.interpreter)
+            value = expression.evaluate_expression(parameters)
+            if value is True:
+                value = 'true'
+            elif value is False:
+                value = 'false'
+            elif isinstance(value, str):
+                value = value[1:len(value)-1]
+            elif isinstance(value, int):
+                value = str(value)
+            output = output + value
+        self.interpreter.output(output)
         return value
 
     def __execute_input_statement(self, statement, parameters=None):
         if statement[1] in self.fields:
-            self.fields[statement[1]] = self.interpreter.get_input()
+            self.add_field(statement[1], self.interpreter.get_input())
         return
 
     def __execute_call_statement(self, statement, parameters=None):
@@ -161,7 +165,10 @@ class ObjectDefinition:
         return
 
     def __execute_set_statement(self, statement, parameters):
-        self.add_field(statement[1], statement[2])
+        if statement[1] in self.fields:
+            self.add_field(statement[1], statement[2])
+        else:
+            self.interpreter.error(NameError)
         return
 
 
@@ -256,9 +263,25 @@ print_src = ['(class main',
              ')'
              ')']
 
-
-
-
+print_src = ['(class main',
+             '(field x 5)',
+             '(field y "test")',
+             '(method main ()',
+             '(begin',
+             '(set x "def")',
+             '(print x)',
+             '(set x true)',
+             '(print x)',
+             ')',
+             ')',
+             ')']
+print_src = ['(class main',
+             '(field x 0)',
+             '(field y "test")'
+             ' (method main ()',
+             '(print "here\'s a result " (* 3 5) " and here\'s a boolean" true)',
+             ')'
+             ')']
 
 
 print_src = ['(class main',
@@ -266,7 +289,7 @@ print_src = ['(class main',
              '(field y "test")',
              '(method main ()',
              '(begin',
-             '(set x "def")',
+             '(set z "def")',
              '(print x)',
              '(set x true)',
              '(print x)',
