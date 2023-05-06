@@ -6,6 +6,7 @@ from bparser import BParser
 class Interpreter(InterpreterBase):
     def __init__(self, console_output=True, inp=None, trace_output=False):
         super().__init__(console_output, inp)   # call InterpreterBase’s constructor
+        self.class_defs = {}
 
     def run(self, program):
         result, parsed_program = BParser.parse(program)
@@ -26,10 +27,15 @@ class Interpreter(InterpreterBase):
                     statement = item[3]
                     class_methods.append(MethodDefinition(
                         method_name, params, statement))
-        new_class_def = ClassDefinition(
-            class_name, class_methods, class_fields, self)
-        obj_def = new_class_def.instantiate_object()
-        obj_def.call_method("main", [])
+            new_class_def = ClassDefinition(
+                class_name, class_methods, class_fields, self)
+            self.class_defs[class_name] = new_class_def
+
+        main_class = self.class_defs["main"]
+        main_class.instantiate_object().call_method("main", [])
+
+    def get_class_def(self):
+        return self.class_defs
 
 
 class FieldDefinition:
@@ -74,9 +80,12 @@ class ObjectDefinition:
     def __init__(self, interpreter):
         self.methods = {}
         self.fields = {}
+        self.parameters = {}
         self.interpreter = interpreter
 
     def add_field(self, field_name, initial_value):
+        self.fields[field_name] = initial_value
+        """
         if initial_value.isdigit() or initial_value[1:].isdigit():
             self.fields[field_name] = int(initial_value)
         elif initial_value == 'true':
@@ -85,6 +94,7 @@ class ObjectDefinition:
             self.fields[field_name] = False
         else:
             self.fields[field_name] = str(initial_value)
+        """
 
     def add_method(self, method):
         self.methods[method.method_name] = method
@@ -92,6 +102,12 @@ class ObjectDefinition:
     def call_method(self, method_name, parameters):
         method = self.methods[method_name]
         statement = method.get_top_level_statement()
+        if len(method.params) != len(parameters):
+            self.interpreter.error(TypeError)
+        else:
+            for i in range(0, len(method.params)):
+                self.parameters[method.params[i]] = parameters[i]
+        print(self.parameters)
         result = self.__run_statement(statement, parameters)
         return result
 
@@ -134,11 +150,26 @@ class ObjectDefinition:
         return value
 
     def __execute_input_statement(self, statement, parameters=None):
+        expression = Expression(
+            self.interpreter.get_input(), self.fields, self.interpreter)
+        value = expression.evaluate_expression(parameters)
         if statement[1] in self.fields:
-            self.add_field(statement[1], self.interpreter.get_input())
+            self.add_field(statement[1], value)
         return
 
     def __execute_call_statement(self, statement, parameters=None):
+        if statement[1] == 'me':
+            if statement[2] in self.methods:
+                self.call_method(statement[2], parameters=statement[3:])
+            else:
+                self.interpreter.error(NameError)
+        else:
+            expression = Expression(
+                statement[1], self.fields, self.interpreter)
+            class_name = expression.evaluate_expression(parameters)
+            class_name.call_method(statement[2], parameters=statement[3:])
+            return
+
         return
 
     def __execute_while_statement(self, statement, parameters=None):
@@ -165,8 +196,10 @@ class ObjectDefinition:
         return
 
     def __execute_set_statement(self, statement, parameters):
+        expression = Expression(statement[2], self.fields, self.interpreter)
+        value = expression.evaluate_expression(parameters)
         if statement[1] in self.fields:
-            self.add_field(statement[1], statement[2])
+            self.add_field(statement[1], value)
         else:
             self.interpreter.error(NameError)
         return
@@ -215,8 +248,14 @@ class Expression:
                 arg = Expression(
                     self.expression[1], self.fields, self.interpreter).evaluate_expression(parameters)
                 return not arg
+            elif op == 'new':
+                class_defs = self.interpreter.get_class_def()
+                if self.expression[1] in class_defs:
+                    new_obj = class_defs[self.expression[1]
+                                         ].instantiate_object()
+                return new_obj
         else:
-            if self.expression.isdigit():
+            if self.expression.isdigit() or self.expression[1:].isdigit():
                 result = int(self.expression)
             elif self.expression == 'true':
                 result = True
@@ -282,20 +321,19 @@ print_src = ['(class main',
              '(print "here\'s a result " (* 3 5) " and here\'s a boolean" true)',
              ')'
              ')']
+'''
 
 
 print_src = ['(class main',
-             '(field x 5)',
-             '(field y "test")',
+             '(field other null)',
              '(method main ()',
              '(begin',
-             '(set z "def")',
-             '(print x)',
-             '(set x true)',
-             '(print x)',
+             '(set other (new other_class))',
+             '(call other foo 5 6)))',
              ')',
-             ')',
+             '(class other_class',
+             '(field a 10)',
+             '(method foo (q r) (print (+ a (+ q r))))',
              ')']
 test = Interpreter()
 test.run(print_src)
-'''
