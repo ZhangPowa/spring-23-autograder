@@ -187,12 +187,14 @@ class ObjectDefinition:
     def __execute_while_statement(self, statement):
         result = None
         condition = (Expression(
-            statement[1], self.fields, self.parameters, self.interpreter).evaluate_expression())
+            statement[1], self, self.interpreter).evaluate_expression())
         if type(condition) != bool:
             self.interpreter.error(ErrorType.TYPE_ERROR)
-        while (Expression(statement[1], self.fields, self.parameters, self.interpreter).evaluate_expression()):
+        if condition:
             result = self.__run_statement(statement[2])
-        return result
+            self.__execute_while_statement(statement)
+        else:
+            return result
 
     def __execute_if_statement(self, statement):
         result = None
@@ -421,14 +423,19 @@ print_src = ['(class main',
 
 
 
+
+
 print_src = ['(class main',
-             '(field x "yes")',
+             '(field x 0)',
              '(method main ()',
              '(begin',
-             '(inputs x)',
-             '(print x)'
-             ')))'
-             ]
+             '(inputi x)',
+             '(while (> x 0)',
+             '(begin',
+             '(print "x is " x)',
+             '(set x (- x 1))',
+             '))))'
+             ')']
 test = Interpreter()
 test.run(print_src)
 '''
