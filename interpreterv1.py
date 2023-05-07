@@ -176,6 +176,8 @@ class ObjectDefinition:
             expression = Expression(
                 statement[1], self, self.interpreter)
             class_name = expression.evaluate_expression()
+            if class_name == 'null':
+                self.interpreter.error(ErrorType.FAULT_ERROR)
             if statement[2] in class_name.methods:
                 if (class_name.call_method(statement[2], parameters=values)) is not None:
                     value = class_name.call_method(
@@ -323,120 +325,6 @@ class Expression():
                     result = self.expression.replace('"', '')
         return result
     '''
-          
-
-print_src = ['(class main',
-             ' (method main ()',
-             ' (print (+ (+ 2 5) 5 ))',
-             ' ) # end of method',
-             ') # end of class']
-
-test = Interpreter()
-test.run(print_src)
-
-print_src = ['(class main',
-             '(field x 0)',
-             '(field y "test")'
-             ' (method main ()',
-             '(begin ',
-             '(inputi x)',
-             ' (print x)',
-             '(inputi y)',
-             ' (print y)',
-             ')',
-             ')'
-             ')']
-
-print_src = ['(class main',
-             '(field x 5)',
-             '(field y "test")',
-             '(method main ()',
-             '(begin',
-             '(set x "def")',
-             '(print x)',
-             '(set x true)',
-             '(print x)',
-             ')',
-             ')',
-             ')']
-print_src = ['(class main',
-             '(field x 0)',
-             '(field y "test")'
-             ' (method main ()',
-             '(print "here\'s a result " (* 3 5) " and here\'s a boolean" true)',
-             ')'
-             ')']
-
-
-
-print_src = ['(class main',
-             '(field other null)',
-             '(method main ()',
-             '(begin',
-             '(set other (new other_class))',
-             '(call other foo 5 6)))',
-             ')',
-             '(class other_class',
-             '(field a 10)',
-             '(method foo (q r) (print (+ a (+ q r))))',
-             ')']
-['(class main',
-             '(method fact (n)',
-             '(if (== n 1)',
-             '(return 1)',
-             '(return (* n (call me fact (- n 1))))',
-             ')',
-             ')',
-             '(method main () (print (call me fact 5)))',
-             ')']
-['(class main',
-             '(field x 0)',
-             '(method main ()',
-             '(begin',
-             '(inputi x)',
-             '(while (> x 0)',
-             '(begin',
-             '(print "x is " x)',
-             '(set x (- x 1))',
-             '))))'
-             ')']
-
-(class main
-  (method fact (n)
-   (if (== n 1)
-     (return 1)
-     (return (* n (call me fact (- n 1))))
-   )
-  )
-  (method main () (print (call me fact 5)))
-)
-(class main',
-             '(field other null)',
-             '(field result 0)',
-             '(method main ()',
-             '(begin',
-             '(call me foo 10 20) ',
-             '(set other (new other_class))',
-             '(call other foo 5 6)',
-             '(print "square: " (call other square 10))))',
-             '(method foo (a b)',
-             '(print a b)))'
-             '(class other_class',
-             '(method foo (q r) (print q r))',
-             '(method square (q) (return (* q q))))'
-
-             ['(class main',
-             '(method fact (n)',
-             '(if (== n 1)',
-             '(return 1)',
-             '(return (* n (call me fact (- n 1))))',
-             ')) ',
-             '(method main () (print (call me fact 2))))',
-             ]
-
-
-
-
 
 print_src = ['(class main',
              '(field x -45)',
