@@ -275,7 +275,7 @@ class Expression():
                         self.interpreter.error(ErrorType.TYPE_ERROR)
                 elif type(arg1) != type(arg2):
                     self.interpreter.error(ErrorType.TYPE_ERROR)
-                if op in {'+', '-', '*', '/', '%', '<', '>', '<=', '>='} and (type(arg1) == bool or type(arg2) == bool):
+                elif op in {'+', '-', '*', '/', '%', '<', '>', '<=', '>='} and (type(arg1) == bool or type(arg2) == bool):
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 elif op in {'-', '*', '/', '%', '&', '|'} and (type(arg1) == str or type(arg2) == str):
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
@@ -308,13 +308,12 @@ class Expression():
             elif self.expression == 'false':
                 result = False
             elif isinstance(self.expression, str):
-                print(self.expression)
                 if self.expression in self.object.fields:
                     result = self.object.fields[self.expression]
                 elif self.expression in self.object.parameters:
                     result = self.object.parameters[self.expression]
                 else:
-                    result = str(self.expression)
+                    result = self.expression.replace('"', '')
         return result
     '''
           
@@ -427,13 +426,15 @@ print_src = ['(class main',
              ')) ',
              '(method main () (print (call me fact 2))))',
              ]
-'''
+
+
 
 
 print_src = ['(class main',
-             '(field x 5)',
-             '(method main ()',
-             '(if (== x null) (print true) (print false))',
-             '))']
+             '(field x "yes")',
+             '(method main()',
+             '(print (+ "yes" x)',
+             ')))']
 test = Interpreter()
 test.run(print_src)
+'''
