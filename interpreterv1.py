@@ -230,6 +230,8 @@ class ObjectDefinition:
         value = expression.evaluate_expression()
         if statement[1] in self.fields:
             self.fields[statement[1]] = value
+        elif statement[1] in self.parameters:
+            self.parameters[statement[1]] = value
         else:
             self.interpreter.error(ErrorType.NAME_ERROR)
         return
