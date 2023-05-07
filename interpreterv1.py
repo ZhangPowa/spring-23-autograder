@@ -289,6 +289,8 @@ class Expression():
             elif op == '!':
                 arg = Expression(
                     self.expression[1],  self.object, self.interpreter).evaluate_expression()
+                if type(arg) != bool:
+                    self.interpreter.error(ErrorType.TYPE_ERROR)
                 return not arg
             elif op == 'new':
                 class_defs = self.interpreter.get_class_def()
