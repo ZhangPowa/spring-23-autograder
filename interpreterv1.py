@@ -30,7 +30,7 @@ class Interpreter(InterpreterBase):
             new_class_def = ClassDefinition(
                 class_name, class_methods, class_fields, self)
             if (class_name in self.class_defs):
-                self.error(TypeError)
+                self.error(ErrorType.TYPE_ERROR)
             else:
                 self.class_defs[class_name] = new_class_def
         main_class = self.class_defs["main"]
@@ -174,7 +174,7 @@ class ObjectDefinition:
                 if (self.call_method(statement[2], parameters=values)) is not None:
                     value = self.call_method(statement[2], parameters=values)
             else:
-                self.interpreter.error(NameError)
+                self.interpreter.error(ErrorType.NAME_ERROR)
         else:
             expression = Expression(
                 statement[1], self, self.interpreter)
@@ -224,7 +224,7 @@ class ObjectDefinition:
         if statement[1] in self.fields:
             self.fields[statement[1]] = value
         else:
-            self.interpreter.error(NameError)
+            self.interpreter.error(ErrorType.NAME_ERROR)
         return
 
 
@@ -429,8 +429,10 @@ print_src = ['(class main',
              '(return (* n (call me fact (- n 1))))',
              ')) ',
              '(method main () (print (call me fact 2))))',
+             '(class main',
+             '(method foo (q r) (print q r))',
+             '(method square (q) (return (* q q))))',
              ]
 test = Interpreter()
 test.run(print_src)
-
 '''
