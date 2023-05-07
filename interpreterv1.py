@@ -250,7 +250,7 @@ class Expression():
                     '+': lambda x, y: x + y,
                     '-': lambda x, y: x - y,
                     '*': lambda x, y: x * y,
-                    '/': lambda x, y: x / y,
+                    '/': lambda x, y: round(x / y),
                     '%': lambda x, y: x % y,
                     '<': lambda x, y: x < y,
                     '>': lambda x, y: x > y,
@@ -310,6 +310,9 @@ class Expression():
             elif isinstance(self.expression, str):
                 if self.expression in self.object.fields:
                     result = self.object.fields[self.expression]
+                    if isinstance(result, str):
+                        if self.expression.isdigit() or self.expression[1:].isdigit():
+                            result = int(self.expression)
                 elif self.expression in self.object.parameters:
                     result = self.object.parameters[self.expression]
                 else:
@@ -430,10 +433,11 @@ print_src = ['(class main',
 
 
 
+
 print_src = ['(class main',
-             '(field x "yes")',
+             '(field x -45)',
              '(method main()',
-             '(print (+ "yes" x)',
+             '(print (/ 40 x)',
              ')))']
 test = Interpreter()
 test.run(print_src)
