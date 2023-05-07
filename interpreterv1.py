@@ -265,13 +265,23 @@ class Expression():
                     self.expression[1], self.object, self.interpreter).evaluate_expression()
                 arg2 = Expression(
                     self.expression[2],  self.object, self.interpreter).evaluate_expression()
-                if type(arg1) != type(arg2):
+                if (arg1 == 'null' or arg2 == 'null'):
+                    if arg1 == 'null' and arg2 == 'null':
+                        if op == '==':
+                            return True
+                        else:
+                            return False
+                    elif self.expression[1] not in self.object.fields and self.expression[2] not in self.object.fields:
+                        self.interpreter.error(ErrorType.TYPE_ERROR)
+                elif type(arg1) != type(arg2):
                     self.interpreter.error(ErrorType.TYPE_ERROR)
                 if op in {'+', '-', '*', '/', '%', '<', '>', '<=', '>='} and (type(arg1) == bool or type(arg2) == bool):
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 elif op in {'-', '*', '/', '%', '&', '|'} and (type(arg1) == str or type(arg2) == str):
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 elif op in {'&', '|'} and (type(arg1) == int or type(arg2) == int):
+                    return self.interpreter.error(ErrorType.TYPE_ERROR)
+                elif op in {'+', '-', '*', '/', '%', '<', '>', '<=', '>=', '&', '|'} and (arg1 == 'null' or arg2 == 'null'):
                     return self.interpreter.error(ErrorType.TYPE_ERROR)
                 result = op_func(arg1, arg2)
             elif op == '!':
@@ -298,12 +308,11 @@ class Expression():
             elif self.expression == 'false':
                 result = False
             elif isinstance(self.expression, str):
+                print(self.expression)
                 if self.expression in self.object.fields:
                     result = self.object.fields[self.expression]
                 elif self.expression in self.object.parameters:
                     result = self.object.parameters[self.expression]
-                elif self.expression == 'null':
-                    result = None
                 else:
                     result = str(self.expression)
         return result
@@ -418,24 +427,13 @@ print_src = ['(class main',
              ')) ',
              '(method main () (print (call me fact 2))))',
              ]
-
-
-
-
-
+'''
 
 
 print_src = ['(class main',
-             '(field x 0)',
+             '(field x 5)',
              '(method main ()',
-             '(begin',
-             '(inputi x)',
-             '(while (> x 0)',
-             '(begin',
-             '(print "x is " x)',
-             '(set x (- x 1))',
-             '))))'
-             ')']
+             '(if (== x null) (print true) (print false))',
+             '))']
 test = Interpreter()
 test.run(print_src)
-'''
