@@ -29,7 +29,10 @@ class Interpreter(InterpreterBase):
                         method_name, params, statement))
             new_class_def = ClassDefinition(
                 class_name, class_methods, class_fields, self)
-            self.class_defs[class_name] = new_class_def
+            if (class_name in self.class_defs):
+                self.error(TypeError)
+            else:
+                self.class_defs[class_name] = new_class_def
         main_class = self.class_defs["main"]
         main_class.instantiate_object().call_method("main", [])
 
@@ -159,6 +162,7 @@ class ObjectDefinition:
         return
 
     def __execute_call_statement(self, statement):
+        value = None
         values = []
         for i in statement[3:]:
             param = Expression(
@@ -169,7 +173,6 @@ class ObjectDefinition:
             if statement[2] in self.methods:
                 if (self.call_method(statement[2], parameters=values)) is not None:
                     value = self.call_method(statement[2], parameters=values)
-                return value
             else:
                 self.interpreter.error(NameError)
         else:
@@ -178,25 +181,27 @@ class ObjectDefinition:
             class_name = expression.evaluate_expression()
             if (class_name.call_method(statement[2], parameters=values)) is not None:
                 value = class_name.call_method(statement[2], parameters=values)
-                return value
+        return value
 
     def __execute_while_statement(self, statement):
+        result = None
         while (Expression(statement[1], self.fields, self.parameters, self.interpreter).evaluate_expression()):
-            self.__run_statement(statement[2])
-        return
+            result = self.__run_statement(statement[2])
+        return result
 
     def __execute_if_statement(self, statement):
+        result = None
         expression = Expression(
             statement[1], self, self.interpreter)
         condition = expression.evaluate_expression()
         if type(condition) != bool:
             self.interpreter.error(ErrorType.TYPE_ERROR)
         if condition:
-            self.__run_statement(statement[2])
+            result = self.__run_statement(statement[2])
         else:
             if len(statement) > 3:
-                self.__run_statement(statement[3])
-        return
+                result = self.__run_statement(statement[3])
+        return result
 
     def __execute_return_statement(self, statement):
         if (len(statement)) > 1:
@@ -271,11 +276,11 @@ class Expression():
                 if self.expression[1] in class_defs:
                     new_obj = class_defs[self.expression[1]
                                          ].instantiate_object()
-                return new_obj
+                result = new_obj
             elif op == 'call':
                 value = self.object._ObjectDefinition__execute_call_statement(
                     self.expression)
-                return value
+                result = value
         else:
             if self.expression.isdigit() or self.expression[1:].isdigit():
                 result = int(self.expression)
@@ -403,7 +408,7 @@ print_src = ['(class main',
              '(class other_class',
              '(method foo (q r) (print q r))',
              '(method square (q) (return (* q q))))'
-             
+
              ['(class main',
              '(method fact (n)',
              '(if (== n 1)',
@@ -412,7 +417,9 @@ print_src = ['(class main',
              ')) ',
              '(method main () (print (call me fact 2))))',
              ]
-             
+
+
+
 
 
 print_src = ['(class main',
@@ -425,4 +432,5 @@ print_src = ['(class main',
              ]
 test = Interpreter()
 test.run(print_src)
+
 '''
