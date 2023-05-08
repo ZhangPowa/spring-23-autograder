@@ -146,6 +146,9 @@ class ObjectDefinition:
                     value = value[1:len(value)-1]
             elif isinstance(value, int):
                 value = str(value)
+            elif value is None:
+                self.interpreter.output(None)
+                return
             output = output + value
         self.interpreter.output(output)
         return
@@ -194,6 +197,8 @@ class ObjectDefinition:
             self.interpreter.error(ErrorType.TYPE_ERROR)
         if condition:
             result = self.__run_statement(statement[2])
+            if (result == ""):
+                return result
             self.__execute_while_statement(statement)
         else:
             return result
@@ -219,11 +224,13 @@ class ObjectDefinition:
             value = expression.evaluate_expression()
             return value
         else:
-            return
+            return ""
 
     def __execute_begin_statement(self, statement):
         for i in statement[1:]:
-            self.__run_statement(i)
+            result = self.__run_statement(i)
+            if result != None:
+                return result
         return
 
     def __execute_set_statement(self, statement):
@@ -326,11 +333,24 @@ class Expression():
         return result
     '''
 
+
+
+test.run(print_src)
+
+
+
 print_src = ['(class main',
-             '(field x -45)',
-             '(method main()',
-             '(print (/ 40 x)',
-             ')))']
+             '(method main ()',
+             '(begin',
+             ' (begin',
+             '(print 1)',
+             '(while (> 1 0)',
+             ' (if (== (% 4 2) 0)',
+             ' (return)',
+             '(print 2)))',
+             '(print 3))',
+             '(print 4))))',
+             ]
 test = Interpreter()
 test.run(print_src)
 '''
